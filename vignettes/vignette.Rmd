@@ -1,0 +1,163 @@
+---
+title: "psSubpathway: a software package for flexible identification of phenotype specific subpathways in the cancer progression"
+author: "Xudong Han<br/>Junwei Han<br/>Qingfei Kong"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{psSubpathway: a software package for flexible identification of phenotype specific subpathways in the cancer progression}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+require(psSubpathway)
+```
+
+## Introduction
+
+  **psSubpathway** is a method designed to discover the relationship between subpathway and multiple sample phenotype.psSubpathway consists of four parts:<br/>
+ 
+1. Extracting subpathways from canonical pathways. We used k-clique method in social network analysis to extract the subpathways and eliminated the smaller subpathways that had an overlap above 80%; The subpathway data is stored in a list structure. <br/>
+2. Inferring subpathway activity profiles. The smaple-specific subpathway activity profiles was inferred by using sample-based gene set enrichment method (GSVA or ssGSEA); <br/>
+3. Identifying subtype-specific subpathways. We developed a Subtype Set Enrichment Analysis (SubSEA) method to identify subtype-specific subpathways across multi-subtype groups of cancer samples; <br/>
+4. Identifying the dynamic changed subpathways. We developed a Dynamic Changed Subpathway Analysis (DCSA) method to identify the dynamic changed subpathways associated with the developmental stage of cancer.<br/>
+
+ Its capabilities render psSubpathway could find the specific dysregulated subpathways in multi-phenotypes samples, and fill the gap in recent subpathway identification methods which generally found the differentially expressed subpathways between normal and cancer samples. psSubpathway may identify more precision biomarkers and phenotype-related disease mechanisms to help to tailored treatment for patients with cancer.
+  
+## SubSEA：identifying subtype-specific subpathways
+
+  The function *SubSEA* can identify subtype-specific subpathways across multi-subtype groups of cancer samples. For each subpathway, we ranked the N samples in the dataset to form a sample list L=<s1, s2…sN> according to decreasing subpathway activity. The samples in a given subtype were mapped to the sample list L. If the samples in the subtype significantly cluster at the top or bottom of the entire ranked list L, the subpathway will be associated with the specific subtype. We used the weighted Kolmogorov-Smirnov statistic to calculate an sample enrichment score (SES), which reflects the degree to which the samples in a subtype is overrepresented toward the extremes (top or bottom) of the sample list L. The SES is calculated by walking down the list L, increasing a running-sum statistic when we encounter a sample in the subtype and decreasing it when we encounter a sample not in the subtype.<br/>
+ 
+  This function requires user input the gene expression profile identified and the corresponding phenotype file of the sample (CLS format).In addition, this function requires input of subpathway list data,which has been extracted from KEGG pathway data and saved into the package environment variables. Of course, users can also define their own dataset list data as input, as long as the gene identification and gene expression profile of gene sets are maintained.<br/>
+  
+ We selected the breast cancer gene expression profile data in the GDC TCGA database and pm50 phenotype file containing   four  breast cancer subtypes for SubSEA and obtained the results of subpathways related to each subtype of breast cancer.The commands are as follows.
+ 
+```{r}
+# load depend package.
+ require(GSVA)
+ require(parallel)
+# get breast cancer disease subtype gene expression profile.
+ Bregenematrix<-get("Subgenematrix")
+# get path of the sample disease subtype files.
+ Subtypelabels<- system.file("extdata", "Sublabels.cls", package = "psSubpathway")
+# perform the SubSEA method.
+#SubSEAresult<-SubSEA(Bregenematrix,
+#                     input.cls=Subtypelabels,
+#                     nperm=50,                     # Number of random permutations
+#                     fdr.th=0.01,                  # Cutoff value for fdr.when fdr.th=1,get all subpathway
+#                     parallel.sz=2)                # Number of processors to use  
+ 
+# get the result of the SubSEA function
+ SubSEAresult<-get("Subspwresult")
+ str(SubSEAresult)
+ head(SubSEAresult$Basal)
+```
+
+## DCSA:Identifying the dynamic changed subpathways associated with the phenotype
+
+  The function *DCSA* used the information theoretic measure of statistical dependence, mutual information (MI), to estimate the dynamic changed subpathways associated with the phenotypic change.<br/>
+  
+  This function requires loading dependent mpmi packages. We selected the adrenocortical cancer (ACC) gene expression profile and the disease stage phenotypes from the GDC TCGA database as an example of DCSA function.The sample contains four disease stages(StageI~StageIV). The following commands will perform DCSA functions to obtain dynamic change subpathways related to changes in the breast cancer development stage.
+  
+```{r message=FALSE, warning=FALSE}
+# load depend package.
+ require(mpmi)
+# get ACC disease stage gene expression profiling.
+ ACCgenematrix<-get("DCgenematrix")
+# get path of the sample disease stage phenotype files.
+ Stagelabels<-system.file("extdata", "DClabels.cls", package = "psSubpathway")
+# perform the DCSA method.
+#DCSAresult<-DCSA(ACCgenematrix,input.cls=Stagelabels,nperm=50,fdr.th=0.01,parallel.sz=2)
+# get the result of the SubSEA function
+ DCSAresult<-get("DCspwresult")
+ str(DCSAresult)
+ head(DCSAresult$DCSA)
+```
+
+## Visualize
+
+  We provide a set of visual analysis functions including `plotSubSEScurve`,`plotSpwACmap`,`plotSpwNetmap` and `plotheatmap`.<br/>
+ 
+  The *plotSubSEScurve* function can plot the subtype set sample enrichment curve graph of the subpathway. The follows commands can plot the subtype set sample enrichment curve graph and we can see the enrichment distribution of the four subtypes of breast cancer samples in the subpathway 00120_9 activity. We can observe that the sample of subtype Basal is specifically enriched to the low expression region of subpathway 00120_9.
+ 
+```{r fig.height=3, fig.width=12}
+# plot enrichment score curve of the subpathway 00120_9 in all breast cancer subtypes
+ plotSubSEScurve(Subspwresult,
+                 spwid="00120_9", # The subpathway id which subpahtway is ploted
+                 phenotype="all")  # Which phenotypic phenotype set enrichment curve is drawn
+                
+```  
+  
+  
+```{r fig.height=4, fig.width=5}
+
+# plot enrichment score curve of the subpathway 00120_9 in the Basal breast cancer subtype.
+ plotSubSEScurve(Subspwresult,spwid="00120_9",phenotype="Basal")
+```  
+  
+ The *plotSpwACmap* function can plot subpathway activity change map (includes subpathway active change box plot and subpathway active change heat map).We can observe the changes of subpathway activity values in breast cancer subtypes or stages and the distribution of each subtype samples.The commands are as follows:
+  
+```{r fig.height=6, fig.width=10}
+# plot the subpathway 00120_9 in the SubSEA function result.
+ plotSpwACmap(Subspwresult,spwid="00120_9")
+ 
+```  
+  
+  
+```{r fig.height=6, fig.width=10}
+# plot the subpathway 00982_2 in the DCSA function result.
+ plotSpwACmap(DCspwresult,spwid="00982_2")
+```  
+  
+  The *plotheatmap* function presents a heat map of the subpathway matrix according to the user's set conditions. The following commands plot heat map of significant up-regulation or down-regulation subpathways. We can observe the obvious block area from the heat map in each subtype.
+ 
+```{r fig.height=8, fig.width=10}
+# load depend package.
+ require(pheatmap)
+# plot significant up-regulation subpathway heat map specific for each breast cancer subtype.
+ plotheatmap(Subspwresult,
+             fdr.th=0.01,      # Cutoff value for fdr
+             plotSubSEA=TRUE,  # Indicate that the input data is the result of the SubSEA function
+             SES="positive",   # Obtain a subpathway with a positive SES value
+             phentype="all")
+
+```  
+  
+  
+```{r fig.height=8, fig.width=10}
+# plot significant down-regulation subpathway heat map specific for each breast cancer subtype.
+ plotheatmap(Subspwresult,plotSubSEA=TRUE,fdr.th=0.01,SES="negative",phentype="all")
+
+``` 
+  
+ We can also draw single subtype specific significant pathway heat map. We can see that there are distinct specific regions under the Basal subtype sample. The commands and results are as follows:
+  
+```{r fig.height=8, fig.width=10}
+# plot Basal subtype specific significant subpathway heat map.
+ plotheatmap(Subspwresult,plotSubSEA=TRUE,fdr.th=0.01,SES="all",phentype="Basal")
+
+```  
+  
+   Since the DCSA function is used to mine the subpathways that change dynamically with the phenotype, the subpathway heat map is scattered. As follows:
+   
+```{r fig.height=8, fig.width=10}
+# plot a heat map of the subpathway that is significantly associated with breast cancer stages.
+ plotheatmap(DCspwresult,plotSubSEA=FALSE,fdr.th=0.01)
+
+``` 
+  
+   The function *plotSpwNetmap* for visualization of a subpathway network map.The commands are as follows:
+  
+```{r fig.height=6, fig.width=8, message=FALSE, warning=FALSE}
+# load depend package.
+ library(igraph)
+# plot network graph of the subpathway 00982_2
+plotSpwNetmap("00982_2")
+
+```
