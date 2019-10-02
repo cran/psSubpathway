@@ -16,8 +16,7 @@ plotSpwNetmap(spwid, layout = NULL, margin = 0,
 \item{spwid}{The subpathway id which the user wants to plot.}
 
 \item{layout}{A matrix of x-y coordinates with two dims. Determine the placement
-of the nodes for drawing a graph. The default is the KEGG node coordinates that
-are originally obtained from the KGML file.}
+of the nodes for drawing a graph.}
 
 \item{margin}{A numeric. The value is usually between -0.5 and 0.5, which is able to zoom in or out a subpathway graph. The
 default is 0.}
@@ -49,6 +48,9 @@ default is 0.}
 \item{sub}{A character string of subtitle.}
 
 \item{main}{A character string of main title.}
+}
+\value{
+a plot
 }
 \description{
 Visualize a subpathway network map.

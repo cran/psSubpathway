@@ -14,8 +14,7 @@
 ##' @param edge.arrow.width Edge arrow width. The default is 3.
 ##' @param edge.label.cex Edge label size.
 ##' @param layout A matrix of x-y coordinates with two dims. Determine the placement
-##' of the nodes for drawing a graph. The default is the KEGG node coordinates that
-##' are originally obtained from the KGML file.
+##' of the nodes for drawing a graph.
 ##' @param vertex.label.color A vector of node label colors. The default is black.
 ##' @param vertex.color A vector of node colors. The default is the KEGG node color.
 ##' @param vertex.frame.color A vector of node frame color. The default is dimgray.
@@ -32,6 +31,7 @@
 ##' The `layout_as_tree` generates a tree-like layout, so it is mainly for
 ##' trees. The `layout_randomly` places the nodes randomly. The `layout_in_circle` places
 ##' the nodes on a unit circle. Detailed information on the parameters can be found in \code{\link[igraph]{layout_}}
+##' @return a plot
 ##' @examples
 ##' # load depend package.
 ##' library(igraph)

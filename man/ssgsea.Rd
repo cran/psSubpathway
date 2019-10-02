@@ -7,8 +7,9 @@
 SubSEA
 }
 \description{
-Single sample GSEA calculates a gene set enrichment score per sample as the normalized difference in
-empirical cumulative distribution functions of gene expression ranks inside and outside the gene set.
+Single sample GSEA (ssGSEA) calculates a gene set enrichment score
+per sample as the normalized difference in empirical cumulative distribution
+functions of gene expression ranks inside and outside the gene set.
 }
 \details{
 ssgsea

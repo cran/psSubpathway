@@ -1,9 +1,8 @@
 ##' SubSEA
 ##'
 ##'
-##' @title Subtype Set Enrichment Analysis (SubSEA).
-##' @description The SubSEA (Subtype Set Enrichment Analysis) method to mine the specific subpathways of each sample
-##' Subtype.
+##' @title Subtype Set Enrichment Analysis (SubSEA)
+##' @description The SubSEA (Subtype Set Enrichment Analysis) method to mine the specific subpathways of each sample Subtype.
 ##' @param expr Matrix of gene expression values (rows are genes, columns are samples).
 ##' @param input.cls Input sample class vector (phenotype) file in CLS format.
 ##' @param subpathwaylist Character string denoting the gene label of the subpahtway list is `Entrezid` (default) or `Symbol`.
@@ -13,22 +12,22 @@
 ##' is suitable when input expression values are continuous, such as microarray fluorescent units in logarithmic scale,
 ##' RNA-seq log-CPMs, log-RPKMs or log-TPMs. When input expression values are integer counts, such as those derived from
 ##' RNA-seq experiments, then this argument should be set to `kcdf="Poisson"`.
-##' @param method Method to employ in the estimation of subpathway enrichment scores per sample.By default this is set to
+##' @param method Method to employ in the estimation of subpathway enrichment scores per sample. By default,this is set to
 ##' `gsva` (Hänzelmann et al, 2013) and other options are `ssgsea` (Barbie et al, 2009).
 ##' @param min.sz Minimum size of the resulting subpathway.
 ##' @param max.sz Maximum size of the resulting subpathway.
-##' @param nperm Number of random permutations (default: 100).
-##' @param fdr.th Cutoff value for fdr. Only subpathway with lower fdr.th are listed (default: 1).
+##' @param nperm Number of random permutations (default: 100). In practice, the users can set their own values as needed, and more than 1000 times may be fine in general.
+##' @param fdr.th Cutoff value for FDR. The only subpathway with lower fdr.th are listed (default: 1).
 ##' @param mx.diff Offers two approaches to calculate the sample enrichment score (SES) from the KS random walk statistic.
 ##' `mx.diff=FALSE`: SES is calculated as the maximum distance of the random walk from 0. `mx.diff=TRUE` (default): SES is
 ##' calculated as the magnitude difference between the largest positive and negative random walk deviations.
 ##' @param parallel.sz Number of processors to use when doing the calculations in parallel. If this argument is left with its
 ##' default value (parallel.sz=0) then it will use all available core processors unless we set this argument with a smaller number.
 ##' @details
-##' This function uses the GSVA method to calculate the subpathway activity profile based on the gene expression
-##' profile and subpathway list.Then we calculate the sample enrichment score (SES) of each subpathway by Subtype Set
+##' This function calculates the subpathway activity profile based on the gene expression
+##' profile and subpathway list by 'gsva' or 'ssgssea'. Then we calculate the sample enrichment score (SES) of each subpathway by Subtype Set
 ##' Enrichment Analysis (SubSEA).We permute the gene labels and recompute the SES for the permuted data, which generates
-##' a null distribution for the SES.The P value and the fdr value are calculated according to the perturbation analysis.
+##' a null distribution for the SES.The P-value and the FDR value are calculated according to the perturbation analysis.
 ##'
 ##' @return A list containing the results of the SubSEA and the subpathway activity profile.
 ##' @author Xudong Han,
@@ -74,27 +73,16 @@
 ##' @useDynLib psSubpathway,.registration = TRUE
 ##' @export
 
-
-
 SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
                  method="gsva",min.sz=1,max.sz=Inf,nperm=100,fdr.th=1,
                  mx.diff=TRUE,parallel.sz=0){
-
   if(is.list(subpathwaylist)==TRUE){
-    spwlist<-subpathwaylist
-    genetag<-unlist(lapply(subpathwaylist,
-                           function(x){
-                             x<-as.character(x)
-                             a<-paste(unlist(x),collapse=" ")
-                             return(a)
-                           }))
+    spwlist1<-subpathwaylist
   }else{
     if(subpathwaylist=="Entrezid"){
-      spwlist<-get("spwentrezidlist")
-      genetag<-get("geneentrezid")
+      spwlist1<-get("spwentrezidlist")
     }else if(subpathwaylist=="Symbol"){
-      spwlist<-get("spwsymbollist")
-      genetag<-get("genesymbol")
+      spwlist1<-get("spwsymbollist")
     }
   }
 
@@ -106,131 +94,111 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
     kernel <- TRUE
   }
 
-
-
-  allgene<-unlist(spwlist)
-  qcindex<-match(rownames(expr),allgene)
-  naindex<-which(is.na(qcindex)==TRUE)
-  if(length(naindex)>0){
-    expr<-expr[-naindex,]
-  }else{
-    expr<-expr
-  }
-
-
   if(is.list(input.cls)) {
     CLS <- input.cls
   } else {
     CLS <- ReadClsFile(file=input.cls)
   }
   phen <- rev(CLS$phen)
-  sampleV <-CLS$class.labes
+  samples.v <-CLS$class.labes
 
-  spwlist <- lapply(spwlist,
+  expr<-data.matrix(expr)
+  allgenes<-row.names(expr)
+  spwlist <- lapply(spwlist1,
                     function(x ,y) na.omit(match(x, y)),
-                    rownames(expr))
+                    allgenes)
   spwlist <- filterGeneSets(spwlist,
                             min.sz=max(1, min.sz),
                             max.sz=max.sz)
   spwnames<-names(spwlist)
+  N<-length(allgenes)
+  n.samples <- ncol(expr)
+
+  if(parallel.sz==0){
+   nCores <- parallel::detectCores()
+  }else{
+    nCores<-parallel.sz
+  }
 
   if(method=="gsva"){
-        n.samples <- ncol(expr)
-        n.genes <- nrow(expr)
-        zgindex<-seq(1,n.genes)
-        sample.idxs<-c(1:n.samples)
 
-        gene.density <- getgenedensity(expr, sample.idxs, rnaseq, kernel)
+    sample.idxs<-c(1:n.samples)
+    gene.density <- getgenedensity(expr, sample.idxs, rnaseq, kernel)
+    rank.scores <- rep(0, N)
+    sort.sgn.idxs <- apply(gene.density, 2, order, decreasing=TRUE)
+    rank.scores <- apply(sort.sgn.idxs, 2, compute_rank_score,N)
 
-        rank.scores <- rep(0, n.genes)
-        sort.sgn.idxs <- apply(gene.density, 2, order, decreasing=TRUE)
-        rank.scores <- apply(sort.sgn.idxs, 2, compute_rank_score,n.genes)
-
-        n.gset<-length(spwlist)
-
-        spwmatrix<-t(sapply(spwlist, ks_test_m, rank.scores, sort.sgn.idxs,
+    #ture spw matrix
+    spw_matrix<-t(sapply(spwlist, ks_test_m, rank.scores, sort.sgn.idxs,
                             mx.diff=mx.diff, abs.ranking=FALSE,
                             tau=1))
-        row.names(spwmatrix)<-spwnames
-        colnames(spwmatrix)<-sampleV
+    row.names(spw_matrix)<-spwnames
+    colnames(spw_matrix) <- samples.v
 
-        if(parallel.sz==1){
-          rdeslist<-lapply(1:nperm, function(n,zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff){
+    #perturbation
+    zgindex<-seq(1,N)
+    n.gset<-length(spwlist)
 
-            rdgs.list<-lapply(1:n.gset, function(s){
-              ng<-length(spwlist[[s]])
-              rdgs<-sample(zgindex,ng,replace = F)
-              return(rdgs)
-            })
+    cl <- makeCluster(nCores)
+    clusterExport(cl,"ks_test_m")
+    clusterEvalQ(cl,library(GSVA))
 
-            m <- t(sapply(rdgs.list, ks_test_m, rank.scores, sort.sgn.idxs,
-                          mx.diff=mx.diff, abs.ranking=FALSE,
-                          tau=1))
+      rdeslist<-parLapply(cl,1:nperm, function(n,zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff){
+        rdgs.list<-lapply(1:n.gset, function(s){
+          ng<-length(spwlist[[s]])
+          rdgs<-sample(zgindex,ng,replace = F)
+          return(rdgs)
+        })
+        m <- t(sapply(rdgs.list, ks_test_m, rank.scores, sort.sgn.idxs,
+                      mx.diff=mx.diff, abs.ranking=FALSE,
+                      tau=1))
 
-            return(m)
+        return(m)
 
-          },zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff)
-        }else{
-
-        if(parallel.sz==0){
-          num_workers <- parallel::detectCores()
-        }else{
-          num_workers<-parallel.sz
-        }
-        cl <- makeCluster(num_workers)
-        clusterExport(cl,"ks_test_m")
-
-
-        clusterEvalQ(cl,library(GSVA))
-
-        rdeslist<-parLapply(cl,1:nperm,function(n,zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff){
-
-          rdgs.list<-lapply(1:n.gset, function(s){
-            ng<-length(spwlist[[s]])
-            rdgs<-sample(zgindex,ng,replace = F)
-            return(rdgs)
-          })
-
-          m <- t(sapply(rdgs.list, ks_test_m, rank.scores, sort.sgn.idxs,
-                        mx.diff=mx.diff, abs.ranking=FALSE,
-                        tau=1))
-
-          return(m)
-
-        },zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff)
-        stopCluster(cl)
-        }
+      },zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff)
+    stopCluster(cl)
   }
+
   if(method=="ssgsea"){
 
     genename<-row.names(expr)
-    spwmatrix<-ssgsea(expr,spwlist,alpha=1)
+    spw_matrix<-ssgsea(expr,spwlist,parallel.sz=nCores)
 
     rdeslist<-lapply(1:nperm,function(n){
       expr1<-expr
       row.names(expr1)<-sample(genename,replace = F)
 
-      m<-ssgsea(expr1,spwlist,alpha=1)
+      m<-ssgsea(expr1,spwlist,parallel.sz=nCores)
       return(m)
     })
 
   }
 
-
-
-
+  #Sample enrichment analysis
+  #real
   pn<-length(phen)
-
-  if(parallel.sz==0){
-    num_workers <- parallel::detectCores()
-  }else{
-    num_workers<-parallel.sz
-  }
-  cl2 <- makeCluster(num_workers)
-  clusterExport(cl2,"FastSEAscore")
-  rddata<-parLapply(cl2,1:pn,function(p,rdeslist,phen,sampleV,nperm){
+  ESdata<-sapply(1:pn, function(p){
     phen1<-phen[p]
-    samlabel<-sampleV
+    samlabel<-samples.v
+    samlabel[samlabel!=phen1]<-0
+    samlabel[samlabel==phen1]<-1
+    ident<-as.numeric(samlabel)
+
+    es<-apply(spw_matrix, 1, function(hang){
+      pxindex<-order(hang,decreasing = T)
+      pxhang<-hang[pxindex]
+      pxlab<-ident[pxindex]
+      yes<-FastSEAscore(pxlab,pxhang)
+      return(yes)
+    })
+    return(es)
+  })
+
+  cl1 <- makeCluster(nCores)
+  clusterExport(cl1,"FastSEAscore")
+  rddata<-parLapply(cl1,1:pn,function(p,rdeslist,phen,samples.v,nperm){
+    phen1<-phen[p]
+    samlabel<-samples.v
     samlabel[samlabel!=phen1]<-0
     samlabel[samlabel==phen1]<-1
     ident<-as.numeric(samlabel)
@@ -246,29 +214,26 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
       })
       return(ryes)
     })
-
     rdESmatrix1<-do.call(cbind,rdESmatrix)
-    gc()
     return(rdESmatrix1)
-  },rdeslist,phen,sampleV,nperm)
-  stopCluster(cl2)
+  },rdeslist,phen,samples.v,nperm)
+  stopCluster(cl1)
 
-  ESdata<-sapply(1:pn, function(p){
-    phen1<-phen[p]
-    samlabel<-sampleV
-    samlabel[samlabel!=phen1]<-0
-    samlabel[samlabel==phen1]<-1
-    ident<-as.numeric(samlabel)
-
-    es<-apply(spwmatrix, 1, function(hang){
-      pxindex<-order(hang,decreasing = T)
-      pxhang<-hang[pxindex]
-      pxlab<-ident[pxindex]
-      yes<-FastSEAscore(pxlab,pxhang)
-      return(yes)
-    })
-    return(es)
-  })
+  #p_value
+  if(is.list(subpathwaylist)==TRUE){
+    pp<-match(names(spwlist),names(spwlist1))
+    spwtitle<-names(spwlist1[pp])
+  }else{
+    pp<-match(names(spwlist),names(spwlist1))
+    spwtitle<-get("spwtitle")
+    spwtitle<-spwtitle[pp]
+  }
+  genetag<-unlist(lapply(spwlist1[pp],
+                         function(x){
+                           x<-as.character(x)
+                           a<-paste(unlist(x),collapse=" ")
+                           return(a)
+                         }))
 
   reportlist<-lapply(1:pn,function(j){
     ESvalue<-ESdata[,j]
@@ -287,20 +252,13 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
     fdr<-p.adjust(p.vals,"BH",length(p.vals))
     sxindex<-which(fdr<=fdr.th)
 
-    if(is.list(subpathwaylist)==TRUE){
-      spwtitle<-names(subpathwaylist)
-    }else{
-      spwtitle<-get("spwtitle")
-    }
-
     gene1<- genetag[sxindex]
     spwtitle1<-spwtitle[sxindex]
 
     result<-data.frame(SubpathwayID=names(spwlist)[sxindex],PathwayName=spwtitle1,SubpathwayGene=gene1,SES=ESscore[sxindex],Pvalue=p.vals[sxindex],FDR=fdr[sxindex])
     return(result)
   })
-  reportlist[[length(phen)+1]]<-spwmatrix
+  reportlist[[length(phen)+1]]<-spw_matrix
   names(reportlist)<-c(phen,"spwmatrix")
   return(reportlist)
-
 }

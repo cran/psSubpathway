@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotSubSEScurve.R
 \name{plotSubSEScurve}
 \alias{plotSubSEScurve}
-\title{Polt subtype set sample enrichment score curve graph}
+\title{Plot subtype set sample enrichment score curve graph}
 \usage{
 plotSubSEScurve(inputdata, spwid = "", phenotype = "all")
 }
@@ -15,17 +15,19 @@ plotSubSEScurve(inputdata, spwid = "", phenotype = "all")
 When `phenotype="all"` (default), the phenotype set enrichment score curve graph of subpathway under all phenotypes is drawn.}
 }
 \value{
+a plot
+
 an enrichment score curve graph
 }
 \description{
-Draw an sample enrichment score curve graph of a single or all subtypes.
+Draw a sample enrichment score curve graph of a single or all subtypes.
 }
 \details{
 plotSubSEScurve
 
 
-Plot an phenotype set enrichment score curve graph of a subpathway under all phenotypes or specified phenotype,including the
-location of the maximum enrichment score (ES) and the leading-edge subset.This function can only be used for the results of
+Plot a phenotype set enrichment score curve graph of a subpathway under all phenotypes or specified phenotype, including the
+location of the maximum enrichment score (ES) and the leading-edge subset. This function can only be used for the results of
 the `SubSEA` function.
 }
 \examples{

@@ -13,7 +13,7 @@ DCSA(expr, input.cls = "", subpathwaylist = "Symbol",
 
 \item{input.cls}{Input sample phenotype class vector file in CLS format.}
 
-\item{subpathwaylist}{Character string denoting the gene label of the subpahtway list is `Entrezid` (default) or `Symbol`.
+\item{subpathwaylist}{Character string denoting the gene label of the subpathway list is `Entrezid` (default) or `Symbol`.
 Users can also enter their own subpathway list data. This list should be consistent with the gene label in the input gene expression profile.}
 
 \item{kcdf}{Character string denoting the kernel to use during the non-parametric estimation of the cumulative
@@ -22,16 +22,16 @@ is suitable when input expression values are continuous, such as microarray fluo
 RNA-seq log-CPMs, log-RPKMs or log-TPMs. When input expression values are integer counts, such as those derived from
 RNA-seq experiments, then this argument should be set to `kcdf="Poisson"`.}
 
-\item{method}{Method to employ in the estimation of subpathway enrichment scores per sample.By default this is set to
+\item{method}{Method to employ in the estimation of subpathway enrichment scores per sample. By default, this is set to
 `gsva` (Hänzelmann et al, 2013) and other options are `ssgsea` (Barbie et al, 2009).}
 
 \item{min.sz}{Minimum size of the resulting subpathway.}
 
 \item{max.sz}{Maximum size of the resulting subpathway.}
 
-\item{nperm}{Number of random permutations (default: 100).}
+\item{nperm}{Number of random permutations (default: 100).In practice, the users can set their own values as needed, and more than 1000 times may be fine in general.}
 
-\item{fdr.th}{Cutoff value for fdr. Only subpathway with lower fdr.th are listed (default: 1).}
+\item{fdr.th}{Cutoff value for FDR. The only subpathway with lower FDR.th are listed (default: 1).}
 
 \item{mx.diff}{Offers two approaches to calculate the sample enrichment score (SES) from the KS random walk statistic.
 `mx.diff=FALSE`: SES is calculated as the maximum distance of the random walk from 0. `mx.diff=TRUE` (default): SES is
@@ -45,15 +45,15 @@ A list containing the results of DCSA and subpathway activity profile.
 }
 \description{
 This function will perform the Dynamic Changed Subpathway Analysis (DCSA) method to estimate the dynamic
-changed subpathways associated with the sample phenotypes (like developmental stage of cancer).
+changed subpathways associated with the sample phenotypes (like the developmental stage of cancer).
 }
 \details{
 DCSA
 
 
-This function constructs a subpathway activity profile  by using subpathway list and gene expression
-profiling as input to the GSVA method. Next,we used the information theoretic measure of statistical dependence,
-mutual information (MI), to estimate the dynamic changed subpathways associated with the sample phenotypes.
+This function calculates the subpathway activity profile based on the gene expression profile and subpathway list by 'gsva' or 'ssgssea'.
+Next, we used the information-theoretic measure of statistical dependence,
+mutual information (MI), to estimate the dynamically changed subpathways associated with the sample phenotypes.
 Finally we used the perturbation analysis of the gene label rearrangement to estimating the statistical significance.
 }
 \examples{

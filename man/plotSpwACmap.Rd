@@ -15,11 +15,15 @@ plotSpwACmap(inputdata, spwid = "")
 a plot
 }
 \description{
-The subpathway activity change map includes subpathway active change box plot and subpathway active change
-heat map.
+Plot a box diagram and heat map of subpathway activity in each phenotype.
 }
 \details{
 plotSpwACmap
+
+
+Plot a box diagram of subpathway activity in each Phenotype and a heat map of the distribution of the phenotypic samples in the activity of the subpathways.
+The subpathway activity change map includes subpathway active change box plot and subpathway active change. Each row in the heat map is all samples of a phenotype.
+These samples are distributed in the subpathway high activity value area label is red, and the distribution in the low expression value area label is blue.
 }
 \examples{
 # get the Subspwresult which is the result of SubSEA method.

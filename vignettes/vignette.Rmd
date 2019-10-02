@@ -36,7 +36,7 @@ require(psSubpathway)
  
   This function requires user input the gene expression profile identified and the corresponding phenotype file of the sample (CLS format).In addition, this function requires input of subpathway list data,which has been extracted from KEGG pathway data and saved into the package environment variables. Of course, users can also define their own dataset list data as input, as long as the gene identification and gene expression profile of gene sets are maintained.<br/>
   
- We selected the breast cancer gene expression profile data in the GDC TCGA database and pm50 phenotype file containing   four  breast cancer subtypes for SubSEA and obtained the results of subpathways related to each subtype of breast cancer.The commands are as follows.
+ We selected the breast cancer gene expression profile data in the GDC TCGA database and pm50 phenotype file containing four breast cancer subtypes for SubSEA and obtained the results of subpathways related to each subtype of breast cancer. The commands are as follows.
  
 ```{r}
 # load depend package.
@@ -59,11 +59,11 @@ require(psSubpathway)
  head(SubSEAresult$Basal)
 ```
 
-## DCSA:Identifying the dynamic changed subpathways associated with the phenotype
+## DCSA: Identifying the dynamically changed subpathways associated with the phenotype
 
-  The function *DCSA* used the information theoretic measure of statistical dependence, mutual information (MI), to estimate the dynamic changed subpathways associated with the phenotypic change.<br/>
+  The function *DCSA* used the information-theoretic measure of statistical dependence, mutual information (MI), to estimate the dynamically changed subpathways associated with the phenotypic change.<br/>
   
-  This function requires loading dependent mpmi packages. We selected the adrenocortical cancer (ACC) gene expression profile and the disease stage phenotypes from the GDC TCGA database as an example of DCSA function.The sample contains four disease stages(StageI~StageIV). The following commands will perform DCSA functions to obtain dynamic change subpathways related to changes in the breast cancer development stage.
+  This function requires loading dependent mpmi packages. We selected adrenocortical cancer (ACC) gene expression profile and the disease stage phenotypes from the GDC TCGA database as an example of DCSA function. The sample contains four disease stages(StageI~StageIV). The following commands will perform DCSA functions to obtain dynamic change subpathways related to changes in the breast cancer development stage.
   
 ```{r message=FALSE, warning=FALSE}
 # load depend package.
@@ -101,7 +101,7 @@ require(psSubpathway)
  plotSubSEScurve(Subspwresult,spwid="00120_9",phenotype="Basal")
 ```  
   
- The *plotSpwACmap* function can plot subpathway activity change map (includes subpathway active change box plot and subpathway active change heat map).We can observe the changes of subpathway activity values in breast cancer subtypes or stages and the distribution of each subtype samples.The commands are as follows:
+ The *plotSpwACmap* function can plot subpathway activity change map (includes subpathway active change box plot and subpathway active change heat map). We can observe the changes in subpathway activity values in breast cancer subtypes or stages and the distribution of each subtype samples. The commands are as follows:
   
 ```{r fig.height=6, fig.width=10}
 # plot the subpathway 00120_9 in the SubSEA function result.
@@ -125,22 +125,22 @@ require(psSubpathway)
              fdr.th=0.01,      # Cutoff value for fdr
              plotSubSEA=TRUE,  # Indicate that the input data is the result of the SubSEA function
              SES="positive",   # Obtain a subpathway with a positive SES value
-             phentype="all")
+             phenotype="all")
 
 ```  
   
   
 ```{r fig.height=8, fig.width=10}
 # plot significant down-regulation subpathway heat map specific for each breast cancer subtype.
- plotheatmap(Subspwresult,plotSubSEA=TRUE,fdr.th=0.01,SES="negative",phentype="all")
+ plotheatmap(Subspwresult,plotSubSEA=TRUE,fdr.th=0.01,SES="negative",phenotype="all")
 
 ``` 
   
- We can also draw single subtype specific significant pathway heat map. We can see that there are distinct specific regions under the Basal subtype sample. The commands and results are as follows:
+ We can also draw a single subtype-specific significant pathway heat map. We can see that there are distinct specific regions under the Basal subtype sample. The commands and results are as follows:
   
 ```{r fig.height=8, fig.width=10}
 # plot Basal subtype specific significant subpathway heat map.
- plotheatmap(Subspwresult,plotSubSEA=TRUE,fdr.th=0.01,SES="all",phentype="Basal")
+ plotheatmap(Subspwresult,plotSubSEA=TRUE,fdr.th=0.01,SES="all",phenotype="Basal")
 
 ```  
   
@@ -152,7 +152,22 @@ require(psSubpathway)
 
 ``` 
   
-   The function *plotSpwNetmap* for visualization of a subpathway network map.The commands are as follows:
+   The *plotSpwPSheatmap* function presents a heat map of the T-test P-value of the activity of the subpathway between the phenotypes. The lower the number in the cells in the heat map, the greater the difference in the activity of the subpathways between the two phenotypes. The following commands plot the heat map. The activity of subpathway 00120_9 is significantly different from other subtypes in the breast cancer basal subtype.
+```{r fig.height=6, fig.width=7}
+# get the Subspwresult which is the result of SubSEA method.
+ Subspwresult<-get("Subspwresult")
+ # plot significant heat map between the activity of the subpathway in each subtype of breast cancer.
+ plotSpwPSheatmap(Subspwresult,spwid="00120_9")
+``` 
+  The *plotSpwPSheatmap* function can also be used for the results of the *DCSA* method.
+```{r fig.height=6, fig.width=7}
+# get the DCspwresult which is the result of DCSA method. 
+ DCspwresult<-get("DCspwresult")
+##' # plot significant heat map between the activity of the subpathway in each stage of breast cancer.
+ plotSpwPSheatmap(DCspwresult,spwid="00982_2")
+```  
+  
+   The function *plotSpwNetmap* for visualization of a subpathway network map. The commands are as follows:
   
 ```{r fig.height=6, fig.width=8, message=FALSE, warning=FALSE}
 # load depend package.

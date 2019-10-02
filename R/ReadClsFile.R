@@ -2,7 +2,7 @@
 ##'
 ##'
 ##' @title psSubpathway internal functions
-##' @description These are functions read sample label file (.cls format)
+##' @description These are functions read sample label file (.cls format).
 ##' @usage SubSEA
 ##' @usage DCSA
 ##' @author Xudong Han,

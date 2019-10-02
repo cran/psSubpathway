@@ -2,7 +2,7 @@
 % Please edit documentation in R/SubSEA.R
 \name{SubSEA}
 \alias{SubSEA}
-\title{Subtype Set Enrichment Analysis (SubSEA).}
+\title{Subtype Set Enrichment Analysis (SubSEA)}
 \usage{
 SubSEA(expr, input.cls = "", subpathwaylist = "Symbol",
   kcdf = "Gaussian", method = "gsva", min.sz = 1, max.sz = Inf,
@@ -22,16 +22,16 @@ is suitable when input expression values are continuous, such as microarray fluo
 RNA-seq log-CPMs, log-RPKMs or log-TPMs. When input expression values are integer counts, such as those derived from
 RNA-seq experiments, then this argument should be set to `kcdf="Poisson"`.}
 
-\item{method}{Method to employ in the estimation of subpathway enrichment scores per sample.By default this is set to
+\item{method}{Method to employ in the estimation of subpathway enrichment scores per sample. By default,this is set to
 `gsva` (Hänzelmann et al, 2013) and other options are `ssgsea` (Barbie et al, 2009).}
 
 \item{min.sz}{Minimum size of the resulting subpathway.}
 
 \item{max.sz}{Maximum size of the resulting subpathway.}
 
-\item{nperm}{Number of random permutations (default: 100).}
+\item{nperm}{Number of random permutations (default: 100). In practice, the users can set their own values as needed, and more than 1000 times may be fine in general.}
 
-\item{fdr.th}{Cutoff value for fdr. Only subpathway with lower fdr.th are listed (default: 1).}
+\item{fdr.th}{Cutoff value for FDR. The only subpathway with lower fdr.th are listed (default: 1).}
 
 \item{mx.diff}{Offers two approaches to calculate the sample enrichment score (SES) from the KS random walk statistic.
 `mx.diff=FALSE`: SES is calculated as the maximum distance of the random walk from 0. `mx.diff=TRUE` (default): SES is
@@ -44,17 +44,16 @@ default value (parallel.sz=0) then it will use all available core processors unl
 A list containing the results of the SubSEA and the subpathway activity profile.
 }
 \description{
-The SubSEA (Subtype Set Enrichment Analysis) method to mine the specific subpathways of each sample
-Subtype.
+The SubSEA (Subtype Set Enrichment Analysis) method to mine the specific subpathways of each sample Subtype.
 }
 \details{
 SubSEA
 
 
-This function uses the GSVA method to calculate the subpathway activity profile based on the gene expression
-profile and subpathway list.Then we calculate the sample enrichment score (SES) of each subpathway by Subtype Set
+This function calculates the subpathway activity profile based on the gene expression
+profile and subpathway list by 'gsva' or 'ssgssea'. Then we calculate the sample enrichment score (SES) of each subpathway by Subtype Set
 Enrichment Analysis (SubSEA).We permute the gene labels and recompute the SES for the permuted data, which generates
-a null distribution for the SES.The P value and the fdr value are calculated according to the perturbation analysis.
+a null distribution for the SES.The P-value and the FDR value are calculated according to the perturbation analysis.
 }
 \examples{
 # load depend package.
