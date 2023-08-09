@@ -5,6 +5,8 @@
 \title{psSubpathway internal functions}
 \usage{
 SubSEA
+
+DCSA
 }
 \description{
 Single sample GSEA (ssGSEA) calculates a gene set enrichment score

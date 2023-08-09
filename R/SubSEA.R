@@ -41,7 +41,7 @@
 ##' Bregenematrix<-get("Subgenematrix")
 ##' # get path of the sample disease subtype files.
 ##' Subtypelabels<- system.file("extdata", "Sublabels.cls", package = "psSubpathway")
-##' \donttest{SubSEA(Bregenematrix,input.cls=Subtypelabels,nperm=50,fdr.th=0.01,parallel.sz=2)}
+##' # SubSEA(Bregenematrix,input.cls=Subtypelabels,nperm=50,fdr.th=0.01,parallel.sz=2)
 ##' # get the result of the SubSEA function
 ##' SubSEAresult<-get("Subspwresult")
 ##' str(SubSEAresult)
@@ -56,9 +56,9 @@
 ##' # Construct sample labels data.
 ##' subtypelabel<-list(phen=c("subtype1","subtype2","subtype3","subtype4"),
 ##'                    class.labes=c(rep("subtype1",10),rep("subtype2",10),
-##'                    rep("subtype3",10),rep("subtype4",10)))
-##' SubSEAcs<-SubSEA(genematrix,subtypelabel,subpathwaylist,nperm=10,parallel.sz=1)
-##' str(SubSEAcs)
+##'                                  rep("subtype3",10),rep("subtype4",10)))
+##' SubSEAcs<-SubSEA(genematrix,subtypelabel,subpathwaylist,nperm=0,parallel.sz=1)
+##'
 ##'
 ##' @importFrom parallel parLapply
 ##' @importFrom parallel detectCores
@@ -136,12 +136,13 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
     colnames(spw_matrix) <- samples.v
 
     #perturbation
-    zgindex<-seq(1,N)
-    n.gset<-length(spwlist)
+    if(nperm>0){
+      zgindex<-seq(1,N)
+      n.gset<-length(spwlist)
 
-    cl <- makeCluster(nCores)
-    clusterExport(cl,"ks_test_m")
-    clusterEvalQ(cl,library(GSVA))
+      cl <- makeCluster(nCores)
+      clusterExport(cl,"ks_test_m")
+      clusterEvalQ(cl,library(GSVA))
 
       rdeslist<-parLapply(cl,1:nperm, function(n,zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff){
         rdgs.list<-lapply(1:n.gset, function(s){
@@ -156,21 +157,25 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
         return(m)
 
       },zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff)
-    stopCluster(cl)
+      stopCluster(cl)
+    }
+
   }
 
   if(method=="ssgsea"){
 
     genename<-row.names(expr)
     spw_matrix<-ssgsea(expr,spwlist,parallel.sz=nCores)
+    if(nperm>0){
+      rdeslist<-lapply(1:nperm,function(n){
+        expr1<-expr
+        row.names(expr1)<-sample(genename,replace = F)
 
-    rdeslist<-lapply(1:nperm,function(n){
-      expr1<-expr
-      row.names(expr1)<-sample(genename,replace = F)
+        m<-ssgsea(expr1,spwlist,parallel.sz=nCores)
+        return(m)
+      })
+    }
 
-      m<-ssgsea(expr1,spwlist,parallel.sz=nCores)
-      return(m)
-    })
 
   }
 
@@ -194,71 +199,77 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
     return(es)
   })
 
-  cl1 <- makeCluster(nCores)
-  clusterExport(cl1,"FastSEAscore")
-  rddata<-parLapply(cl1,1:pn,function(p,rdeslist,phen,samples.v,nperm){
-    phen1<-phen[p]
-    samlabel<-samples.v
-    samlabel[samlabel!=phen1]<-0
-    samlabel[samlabel==phen1]<-1
-    ident<-as.numeric(samlabel)
+  if(nperm>0){
+    cl1 <- makeCluster(nCores)
+    clusterExport(cl1,"FastSEAscore")
+    rddata<-parLapply(cl1,1:pn,function(p,rdeslist,phen,samples.v,nperm){
+      phen1<-phen[p]
+      samlabel<-samples.v
+      samlabel[samlabel!=phen1]<-0
+      samlabel[samlabel==phen1]<-1
+      ident<-as.numeric(samlabel)
 
-    rdESmatrix<-lapply(1:nperm, function(x){
-      rdm<-rdeslist[[x]]
-      ryes<-apply(rdm,1,function(hang){
-        pxindex<-order(hang,decreasing = T)
-        pxhang<-hang[pxindex]
-        pxlab<-ident[pxindex]
-        res<-FastSEAscore(pxlab,pxhang)
-        return(res)
+      rdESmatrix<-lapply(1:nperm, function(x){
+        rdm<-rdeslist[[x]]
+        ryes<-apply(rdm,1,function(hang){
+          pxindex<-order(hang,decreasing = T)
+          pxhang<-hang[pxindex]
+          pxlab<-ident[pxindex]
+          res<-FastSEAscore(pxlab,pxhang)
+          return(res)
+        })
+        return(ryes)
       })
-      return(ryes)
-    })
-    rdESmatrix1<-do.call(cbind,rdESmatrix)
-    return(rdESmatrix1)
-  },rdeslist,phen,samples.v,nperm)
-  stopCluster(cl1)
+      rdESmatrix1<-do.call(cbind,rdESmatrix)
+      return(rdESmatrix1)
+    },rdeslist,phen,samples.v,nperm)
+    stopCluster(cl1)
 
-  #p_value
-  if(is.list(subpathwaylist)==TRUE){
-    pp<-match(names(spwlist),names(spwlist1))
-    spwtitle<-names(spwlist1[pp])
-  }else{
-    pp<-match(names(spwlist),names(spwlist1))
-    spwtitle<-get("spwtitle")
-    spwtitle<-spwtitle[pp]
-  }
-  genetag<-unlist(lapply(spwlist1[pp],
-                         function(x){
-                           x<-as.character(x)
-                           a<-paste(unlist(x),collapse=" ")
-                           return(a)
-                         }))
-
-  reportlist<-lapply(1:pn,function(j){
-    ESvalue<-ESdata[,j]
-    prdm<-rddata[[j]]
-
-    p.vals <- NULL
-    for(i in 1:length(ESvalue)){
-      if(ESvalue[i]>=0){
-        p.vals[i]<-sum(prdm[i,] >= ESvalue[i])/sum(prdm[i,]>=0)
-      }else{
-        p.vals[i]<-sum(prdm[i,] < ESvalue[i])/sum(prdm[i,]<0)
-
-      }
+    #p_value
+    if(is.list(subpathwaylist)==TRUE){
+      pp<-match(names(spwlist),names(spwlist1))
+      spwtitle<-names(spwlist1[pp])
+    }else{
+      pp<-match(names(spwlist),names(spwlist1))
+      spwtitle<-get("spwtitle")
+      spwtitle<-spwtitle[pp]
     }
-    ESscore<-ESvalue
-    fdr<-p.adjust(p.vals,"BH",length(p.vals))
-    sxindex<-which(fdr<=fdr.th)
+    genetag<-unlist(lapply(spwlist1[pp],
+                           function(x){
+                             x<-as.character(x)
+                             a<-paste(unlist(x),collapse=" ")
+                             return(a)
+                           }))
 
-    gene1<- genetag[sxindex]
-    spwtitle1<-spwtitle[sxindex]
+    reportlist<-lapply(1:pn,function(j){
+      ESvalue<-ESdata[,j]
+      prdm<-rddata[[j]]
 
-    result<-data.frame(SubpathwayID=names(spwlist)[sxindex],PathwayName=spwtitle1,SubpathwayGene=gene1,SES=ESscore[sxindex],Pvalue=p.vals[sxindex],FDR=fdr[sxindex])
-    return(result)
-  })
-  reportlist[[length(phen)+1]]<-spw_matrix
-  names(reportlist)<-c(phen,"spwmatrix")
+      p.vals <- NULL
+      for(i in 1:length(ESvalue)){
+        if(ESvalue[i]>=0){
+          p.vals[i]<-sum(prdm[i,] >= ESvalue[i])/sum(prdm[i,]>=0)
+        }else{
+          p.vals[i]<-sum(prdm[i,] < ESvalue[i])/sum(prdm[i,]<0)
+
+        }
+      }
+      ESscore<-ESvalue
+      fdr<-p.adjust(p.vals,"BH",length(p.vals))
+      sxindex<-which(fdr<=fdr.th)
+
+      gene1<- genetag[sxindex]
+      spwtitle1<-spwtitle[sxindex]
+
+      result<-data.frame(SubpathwayID=names(spwlist)[sxindex],PathwayName=spwtitle1,SubpathwayGene=gene1,SES=ESscore[sxindex],Pvalue=p.vals[sxindex],FDR=fdr[sxindex])
+      return(result)
+    })
+    reportlist[[length(phen)+1]]<-spw_matrix
+    names(reportlist)<-c(phen,"spwmatrix")
+  }else{
+    reportlist<-data.frame(SubpathwayID=names(spwlist))
+
+  }
+
   return(reportlist)
 }

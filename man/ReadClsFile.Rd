@@ -5,6 +5,8 @@
 \title{psSubpathway internal functions}
 \usage{
 SubSEA
+
+DCSA
 }
 \description{
 These are functions read sample label file (.cls format).

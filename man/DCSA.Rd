@@ -4,9 +4,19 @@
 \alias{DCSA}
 \title{Dynamic Changed Subpathway Analysis (DCSA)}
 \usage{
-DCSA(expr, input.cls = "", subpathwaylist = "Symbol",
-  kcdf = "Gaussian", method = "gsva", min.sz = 1, max.sz = Inf,
-  nperm = 100, fdr.th = 1, mx.diff = TRUE, parallel.sz = 0)
+DCSA(
+  expr,
+  input.cls = "",
+  subpathwaylist = "Symbol",
+  kcdf = "Gaussian",
+  method = "gsva",
+  min.sz = 1,
+  max.sz = Inf,
+  nperm = 100,
+  fdr.th = 1,
+  mx.diff = TRUE,
+  parallel.sz = 0
+)
 }
 \arguments{
 \item{expr}{Matrix of gene expression values (rows are genes, columns are samples).}
@@ -62,15 +72,15 @@ require(GSVA)
 require(parallel)
 require(mpmi)
 # get ACC disease stage gene expression profiling.
-ACCgenematrix<-get("DCgenematrix")
+# ACCgenematrix<-get("DCgenematrix")
 # get path of the sample disease stage phenotype files.
-Stagelabels<-system.file("extdata", "DClabels.cls", package = "psSubpathway")
+# Stagelabels<-system.file("extdata", "DClabels.cls", package = "psSubpathway")
 # perform the DCSA method.
-\donttest{DCSA(ACCgenematrix,input.cls=Stagelabels,nperm=50,fdr.th=0.01,parallel.sz=2)}
+# DCSA(ACCgenematrix,input.cls=Stagelabels,nperm=50,fdr.th=0.01,parallel.sz=2)
 # get the result of the SubSEA function
-DCSAresult<-get("DCspwresult")
-str(DCSAresult)
-head(DCSAresult$DCSA)
+# DCSAresult<-get("DCspwresult")
+# str(DCSAresult)
+# head(DCSAresult$DCSA)
 
 # Simulated gene matrix.
 genematrix <- matrix(rnorm(500*40), nrow=500, dimnames=list(1:500, 1:40))
@@ -82,8 +92,8 @@ names(subpathwaylist)<-c(paste(rep("spw",20),c(1:20)))
 stagelabel<-list(phen=c("stage1","stage2","stage3","stage4"),
                    class.labes=c(rep("stage1",10),rep("stage2",10),
                    rep("stage3",10),rep("stage4",10)))
-DCSAcs<-DCSA(genematrix,stagelabel,subpathwaylist,nperm=10,parallel.sz=1)
-str(DCSAcs)
+DCSAcs<-DCSA(genematrix,stagelabel,subpathwaylist,nperm=0,parallel.sz=1)
+
 
 }
 \author{

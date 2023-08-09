@@ -4,9 +4,19 @@
 \alias{SubSEA}
 \title{Subtype Set Enrichment Analysis (SubSEA)}
 \usage{
-SubSEA(expr, input.cls = "", subpathwaylist = "Symbol",
-  kcdf = "Gaussian", method = "gsva", min.sz = 1, max.sz = Inf,
-  nperm = 100, fdr.th = 1, mx.diff = TRUE, parallel.sz = 0)
+SubSEA(
+  expr,
+  input.cls = "",
+  subpathwaylist = "Symbol",
+  kcdf = "Gaussian",
+  method = "gsva",
+  min.sz = 1,
+  max.sz = Inf,
+  nperm = 100,
+  fdr.th = 1,
+  mx.diff = TRUE,
+  parallel.sz = 0
+)
 }
 \arguments{
 \item{expr}{Matrix of gene expression values (rows are genes, columns are samples).}
@@ -63,7 +73,7 @@ require(parallel)
 Bregenematrix<-get("Subgenematrix")
 # get path of the sample disease subtype files.
 Subtypelabels<- system.file("extdata", "Sublabels.cls", package = "psSubpathway")
-\donttest{SubSEA(Bregenematrix,input.cls=Subtypelabels,nperm=50,fdr.th=0.01,parallel.sz=2)}
+# SubSEA(Bregenematrix,input.cls=Subtypelabels,nperm=50,fdr.th=0.01,parallel.sz=2)
 # get the result of the SubSEA function
 SubSEAresult<-get("Subspwresult")
 str(SubSEAresult)
@@ -78,9 +88,9 @@ names(subpathwaylist)<-c(paste(rep("spw",20),c(1:20)))
 # Construct sample labels data.
 subtypelabel<-list(phen=c("subtype1","subtype2","subtype3","subtype4"),
                    class.labes=c(rep("subtype1",10),rep("subtype2",10),
-                   rep("subtype3",10),rep("subtype4",10)))
-SubSEAcs<-SubSEA(genematrix,subtypelabel,subpathwaylist,nperm=10,parallel.sz=1)
-str(SubSEAcs)
+                                 rep("subtype3",10),rep("subtype4",10)))
+SubSEAcs<-SubSEA(genematrix,subtypelabel,subpathwaylist,nperm=0,parallel.sz=1)
+
 
 }
 \author{

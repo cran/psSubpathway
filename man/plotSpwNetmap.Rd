@@ -4,13 +4,25 @@
 \alias{plotSpwNetmap}
 \title{Polt a subpathway network map}
 \usage{
-plotSpwNetmap(spwid, layout = NULL, margin = 0,
-  vertex.label.cex = 0.6, vertex.label.font = 1, vertex.size = 8,
-  vertex.size2 = 6, edge.arrow.size = 0.2, edge.arrow.width = 3,
-  edge.label.cex = 0.6, vertex.label.color = "black",
-  vertex.color = "#BFFFBF", vertex.frame.color = "dimgray",
-  edge.color = "dimgray", edge.label.color = "dimgray", sub = NULL,
-  main = NULL)
+plotSpwNetmap(
+  spwid,
+  layout = NULL,
+  margin = 0,
+  vertex.label.cex = 0.6,
+  vertex.label.font = 1,
+  vertex.size = 8,
+  vertex.size2 = 6,
+  edge.arrow.size = 0.2,
+  edge.arrow.width = 3,
+  edge.label.cex = 0.6,
+  vertex.label.color = "black",
+  vertex.color = "#BFFFBF",
+  vertex.frame.color = "dimgray",
+  edge.color = "dimgray",
+  edge.label.color = "dimgray",
+  sub = NULL,
+  main = NULL
+)
 }
 \arguments{
 \item{spwid}{The subpathway id which the user wants to plot.}

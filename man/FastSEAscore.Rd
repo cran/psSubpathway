@@ -5,6 +5,8 @@
 \title{psSubpathway internal functions}
 \usage{
 SubSEA
+
+DCSA
 }
 \description{
 Fast calculate phenotypic set enrichment score.

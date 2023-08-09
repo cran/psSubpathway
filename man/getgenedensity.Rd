@@ -5,6 +5,8 @@
 \title{psSubpathway internal functions}
 \usage{
 SubSEA
+
+DCSA
 }
 \description{
 Calculating the Kernel estimation of gene.

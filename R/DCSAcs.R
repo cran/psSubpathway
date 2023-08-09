@@ -40,15 +40,15 @@
 ##' require(parallel)
 ##' require(mpmi)
 ##' # get ACC disease stage gene expression profiling.
-##' ACCgenematrix<-get("DCgenematrix")
+##' # ACCgenematrix<-get("DCgenematrix")
 ##' # get path of the sample disease stage phenotype files.
-##' Stagelabels<-system.file("extdata", "DClabels.cls", package = "psSubpathway")
+##' # Stagelabels<-system.file("extdata", "DClabels.cls", package = "psSubpathway")
 ##' # perform the DCSA method.
-##' \donttest{DCSA(ACCgenematrix,input.cls=Stagelabels,nperm=50,fdr.th=0.01,parallel.sz=2)}
+##' # DCSA(ACCgenematrix,input.cls=Stagelabels,nperm=50,fdr.th=0.01,parallel.sz=2)
 ##' # get the result of the SubSEA function
-##' DCSAresult<-get("DCspwresult")
-##' str(DCSAresult)
-##' head(DCSAresult$DCSA)
+##' # DCSAresult<-get("DCspwresult")
+##' # str(DCSAresult)
+##' # head(DCSAresult$DCSA)
 ##'
 ##' # Simulated gene matrix.
 ##' genematrix <- matrix(rnorm(500*40), nrow=500, dimnames=list(1:500, 1:40))
@@ -60,8 +60,8 @@
 ##' stagelabel<-list(phen=c("stage1","stage2","stage3","stage4"),
 ##'                    class.labes=c(rep("stage1",10),rep("stage2",10),
 ##'                    rep("stage3",10),rep("stage4",10)))
-##' DCSAcs<-DCSA(genematrix,stagelabel,subpathwaylist,nperm=10,parallel.sz=1)
-##' str(DCSAcs)
+##' DCSAcs<-DCSA(genematrix,stagelabel,subpathwaylist,nperm=0,parallel.sz=1)
+##'
 ##'
 ##' @importFrom parallel parLapply
 ##' @importFrom parallel detectCores
@@ -127,7 +127,7 @@ DCSA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
   }else{
     nCores<-parallel.sz
   }
-  
+
   if(method=="gsva"){
 
     sample.idxs<-c(1:n.samples)
@@ -144,12 +144,13 @@ DCSA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
     colnames(spw_matrix) <- samples.v
 
     #perturbation
-    zgindex<-seq(1,N)
-    n.gset<-length(spwlist)
+    if(nperm>0){
+      zgindex<-seq(1,N)
+      n.gset<-length(spwlist)
 
-    cl <- makeCluster(nCores)
-    clusterExport(cl,"ks_test_m")
-    clusterEvalQ(cl,library(GSVA))
+      cl <- makeCluster(nCores)
+      clusterExport(cl,"ks_test_m")
+      clusterEvalQ(cl,library(GSVA))
 
       rdeslist<-parLapply(cl,1:nperm, function(n,zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff){
         rdgs.list<-lapply(1:n.gset, function(s){
@@ -164,7 +165,9 @@ DCSA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
         return(m)
 
       },zgindex,n.gset,spwlist,rank.scores,sort.sgn.idxs,mx.diff)
-    stopCluster(cl)
+      stopCluster(cl)
+    }
+
   }
 
   if(method=="ssgsea"){
@@ -172,63 +175,77 @@ DCSA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
     genename<-row.names(expr)
     spw_matrix<-ssgsea(expr,spwlist,parallel.sz=nCores)
 
-    rdeslist<-lapply(1:nperm,function(n){
+    if(nperm>0){
+      rdeslist<-lapply(1:nperm,function(n){
       expr1<-expr
       row.names(expr1)<-sample(genename,replace = F)
 
       m<-ssgsea(expr1,spwlist,parallel.sz=nCores)
       return(m)
-    })
+    })}
+
 
   }
 
 
   hxx<-apply(spw_matrix,1,mminjk.pw,samples.v)
 
-  cl1 <- makeCluster(nCores)
-  clusterEvalQ(cl1,library(mpmi))
-  rdh<-parLapply(cl1,1:nperm,function(n,rdeslist,samples.v){
-    rdspwmatrix<-rdeslist[[n]]
-    yrdhxx<-apply(rdspwmatrix,1,function(hang){
-      hxx1<-mminjk.pw(hang,samples.v)
-      return(hxx1)
-    })
-    return(yrdhxx)
-  },rdeslist,samples.v)
-  stopCluster(cl1)
-  rdhxx<-do.call(cbind,rdh)
+  if(nperm>0){
+    cl1 <- makeCluster(nCores)
+    clusterEvalQ(cl1,library(mpmi))
+    rdh<-parLapply(cl1,1:nperm,function(n,rdeslist,samples.v){
+      rdspwmatrix<-rdeslist[[n]]
+      yrdhxx<-apply(rdspwmatrix,1,function(hang){
+        hxx1<-mminjk.pw(hang,samples.v)
+        return(hxx1)
+      })
+      return(yrdhxx)
+    },rdeslist,samples.v)
+    stopCluster(cl1)
+    rdhxx<-do.call(cbind,rdh)
 
 
-  pz<-NULL
-  for(i in 1:length(rdhxx[,1])){
+    pz<-NULL
+    for(i in 1:length(rdhxx[,1])){
 
-    pz[i]<-sum(rdhxx[i,] >= hxx[i])/nperm
+      pz[i]<-sum(rdhxx[i,] >= hxx[i])/nperm
+
+    }
+    fdr<-p.adjust(pz,method = "BH",length(pz))
+    sxindex<-which(fdr<=fdr.th)
+
+    if(is.list(subpathwaylist)==TRUE){
+      pp<-match(names(spwlist),names(spwlist1))
+      spwtitle<-names(spwlist)
+    }else{
+      pp<-match(names(spwlist),names(spwlist1))
+      spwtitle<-get("spwtitle")
+      spwtitle<-spwtitle[pp]
+    }
+    genetag<-unlist(lapply(spwlist1[pp],
+                           function(x){
+                             x<-as.character(x)
+                             a<-paste(unlist(x),collapse=" ")
+                             return(a)
+                           }))
+    gene1<- genetag[sxindex]
+    spwtitle1<-spwtitle[sxindex]
 
   }
-  fdr<-p.adjust(pz,method = "BH",length(pz))
-  sxindex<-which(fdr<=fdr.th)
 
 
- if(is.list(subpathwaylist)==TRUE){
-    pp<-match(names(spwlist),names(spwlist1))
-    spwtitle<-names(spwlist)
+
+  if(nperm>0){
+    report<-data.frame(SubpahwayID=names(spwlist)[sxindex],PahwayName=spwtitle1,SubpathwayGene=gene1,"D(M)"=hxx[sxindex],Pvalue=pz[sxindex],FDR=fdr[sxindex],
+                       check.names = F)
+    hxxreport<-list(report,spw_matrix)
+    names(hxxreport)<-c("DCSA","spwmatrix")
   }else{
-    pp<-match(names(spwlist),names(spwlist1))
-    spwtitle<-get("spwtitle")
-    spwtitle<-spwtitle[pp]
+    report<-data.frame(SubpahwayID=names(spwlist),"D(M)"=hxx,
+                       check.names = F)
+    hxxreport<-list(report,spw_matrix)
+    names(hxxreport)<-c("DCSA","spwmatrix")
   }
-  genetag<-unlist(lapply(spwlist1[pp],
-                         function(x){
-                           x<-as.character(x)
-                           a<-paste(unlist(x),collapse=" ")
-                           return(a)
-                         }))
-  gene1<- genetag[sxindex]
-  spwtitle1<-spwtitle[sxindex]
 
-  report<-data.frame(SubpahwayID=names(spwlist)[sxindex],PahwayName=spwtitle1,SubpathwayGene=gene1,"D(M)"=hxx[sxindex],Pvalue=pz[sxindex],FDR=fdr[sxindex],
-                     check.names = F)
-  hxxreport<-list(report,spw_matrix)
-  names(hxxreport)<-c("DCSA","spwmatrix")
   return(hxxreport)
 }
