@@ -107,9 +107,13 @@ SubSEA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
   spwlist <- lapply(spwlist1,
                     function(x ,y) na.omit(match(x, y)),
                     allgenes)
-  spwlist <- filterGeneSets(spwlist,
-                            min.sz=max(1, min.sz),
-                            max.sz=max.sz)
+  bl <- NULL
+  for(i in 1:length(spwlist)){
+    if(length(spwlist[[i]])>min.sz|length(spwlist[[i]])<max.sz){
+      bl <- c(bl,i)
+    }
+  }
+  spwlist <- spwlist[bl]
   spwnames<-names(spwlist)
   N<-length(allgenes)
   n.samples <- ncol(expr)

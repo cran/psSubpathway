@@ -79,7 +79,7 @@
 ##' @export
 
 DCSA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
-               method="gsva",min.sz=1,max.sz=Inf,nperm=100,fdr.th=1,
+               method="gsva",min.sz=5,max.sz=1000,nperm=100,fdr.th=1,
                mx.diff=TRUE,parallel.sz=0){
 
  if(is.list(subpathwaylist)==TRUE){
@@ -113,9 +113,14 @@ DCSA<-function(expr,input.cls="",subpathwaylist="Symbol",kcdf="Gaussian",
   spwlist <- lapply(spwlist1,
                     function(x ,y) na.omit(match(x, y)),
                     allgenes)
-  spwlist <- filterGeneSets(spwlist,
-                            min.sz=max(1, min.sz),
-                            max.sz=max.sz)
+
+  bl <- NULL
+  for(i in 1:length(spwlist)){
+    if(length(spwlist[[i]])>min.sz|length(spwlist[[i]])<max.sz){
+      bl <- c(bl,i)
+    }
+  }
+  spwlist <- spwlist[bl]
   spwnames<-names(spwlist)
   N<-length(allgenes)
   n.samples <- ncol(expr)
